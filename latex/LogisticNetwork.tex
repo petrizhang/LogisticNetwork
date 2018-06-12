@@ -79,7 +79,7 @@
 	
 	We assume that the transportation cost per unit flow directly from city $p$ and city $q$ is is proportional to the direct distance between $p$ and $q$ and we denote the coefficient as $s$. Then we have:
 	\begin{equation}
-	C_{ijkm} = s(D_{ik}+D_{km}+D_{mj})
+	C_{ijkm} = s(D_{ik}+\alpha D_{km}+D_{mj})
 	\label{eq:c}
 	\end{equation}
 	
@@ -151,7 +151,7 @@
 	In this section, we formulate the uncapacitade single allocation logistic network design as a ILP problem to minimize 2 objects:
 	\begin{itemize}
 		\item[1.] the cost including transportation cost and update cost .
-		\item[2.] the total travel time between all O-D pairs.
+		\item[2.] the average travel time between all O-D pairs.
 	\end{itemize}
 	
 	
@@ -262,12 +262,96 @@ Similarly to the capacitated single allocation formulation, we add a capacity co
 		&X_{ijkm} \leq A_{ik} * A_{jm} &\quad& \forall i,j,k,m \label{st4.6} \\
 		&\sum_{i}\sum_{j}\sum_{k}{F_{ij}X_{ijkm} \leq K_{m}} &\quad& \forall m \label{st3.8}
 	\end{alignat}
+
+\section{n-hub allocation approximation algorithm}
+
+We fix the hubs number to $n$ before network design to decrease the problem complexity and propose a approximation algorithm to solve this kind of n-hub allocation problem.
+
+Intuitively, the distance between any 2 hubs $k$ and $m$ should in an acceptable range, which menas the value of $d_{km}$ could not be too large or too small. Thus we indtroduce 2 distance threshholds $\tau_{ld}$ and $\tau_{hd}$. For every 2 hubs $k$ and $m$, the distance between them must satisfy $\tau_{ld} \leq d_{km} \leq \tau_{hd}$. This constraint assure our algorithm could terminate.
+
+For a city $i$ and two hubs $k$ and $m$,  we introduce 2 metrics $hc(i,k,m)$ and $ht(i,k, m)$ to measure the transportation cost and travel time through the path $i \rightarrow k \rightarrow m$. 
+\begin{equation}
+	hc(i,k,m) = s(F_{ik}D_{ik} + \alpha F_{km}D_{km})
+\end{equation}
+\begin{equation}
+    ht(i,k,m) = T_{ik} + T_{km}
+\end{equation}
+Here $s$ is the coefficient between transportation cost and flow-distance product and $\alpha$ is the transportation cost discount factor between hubs and non-hubs.
+
+
+To optimize both the 2 values, we simply add them with weights $w_1$ and $w_2$ to get the final determine metric:
+\begin{equation}
+hscore(i,k,m) = w_1 \cdot hc(i,k, m) + w_2 \cdot ht(i,k, m)
+\end{equation}
+
+We focus on following 2 conditions to find a reasonable good hub allocation:
+
+\begin{itemize}
+	\item[1.] $n$ hubs $\mathbf{Hubs}= \{h_1,h_2,...,h_n\}$ are determined and we need to assign the owned hub for a free city $i$.
 	
+	In this condition, we introduce $city\text{-}hub\text{-}score$ to determine the best hub for city $i$. For a city $i$ and a hub $k$, $city\text{-}hub\text{-}score(i,k, \mathbf{Hubs})$ is the sum of $hscore$ from the city $i$ to every hub $m$ through hub $k$:
+	\begin{equation}
+	city\text{-}hub\text{-}score(i,k,\mathbf{Hubs}) = \sum_{m \in \mathbf{Hubs}} hscore(i,k,m)  
+	\end{equation}
+	
+	City $i$ will be allocated to the hub $k$ which has the highest $city\text{-}hub\text{-}score$.
+	
+	\item[2.] $n-1$ hubs $\mathbf{Hubs}= \{h_1,h_2,...,h_{-1}\}$ are determined and we need to find the last hub in the
+	rest cities $\mathbf{Cities}=\{city_1,city_2,...,city_t\}$ to form a complete network.
+	
+	In this condition, to determine a city $k$ if should be selected as a hub, we introduce the metric $hub\text{-}score(k,\mathbf{Hubs},\mathbf{Cities})$ to measure the choice:
+	\begin{equation}
+		hub\text{-}score(k,\mathbf{Hubs},\mathbf{Cities})) = \sum_{i\in \mathbf{Cities}} \sum_{m \in \mathbf{Hubs}} hscore(i,k,m)  
+	\end{equation}
+	
+	For specific city $k$, the metric means the total score of the paths $\text{any city} \rightarrow k \rightarrow \text{all hubs}$.
+\end{itemize}
+
+Contructed on $city\text{-}hub\text{-}score$ and $hub\text{-}score$, the basic idea of our algorithm is:
+
+\begin{itemize}
+	\item [1.] Randomly choose $n$ hubs at the begining. 
+	\item [2.] Calculate the $city\text{-}hub\text{-}score$ for all cities and then allocate these cities to hubs based on this score.
+	\item [3.]  Calculate the $hub\text{-}score$ for all hubs and then and remove the lowest scored one from the hubs set.
+	\item [4.] Calculate the $hub\text{-}score$ for all rest free cities then select a new hub. If the hub equals to the previous one, then algorithm terminates.
+	\item[5.] Repeat from step 2 until the distance between every 2 hubs satisfies the threshold constraint $\tau_{ld} \leq d_{km} \leq \tau_{hd}$.
+\end{itemize}
+\begin{minipage}[t]{\textwidth}
+	\begin{algorithm}[H]
+		\BlankLine
+		\SetKwInOut{Input}{input}
+		\SetKwInOut{Output}{output}
+		$\mathbf{Cities} \leftarrow \{1,2,...,N\}$\;
+		$Owner[1..N] \leftarrow$ Init an array represents the owner hub of cities\;
+		$\mathbf{Hubs} \leftarrow \text{Randomly select $n$ hubs}$\;
+		\caption{n-hub($n$, $\tau_{ld}$, $\tau_{hd}$, $F[1..N][1..N]$, $D[1..N][1..N]$, $T[1..N][1..N]$)}\label{Alg.n-hub}
+		\While{true}{
+			\For{$i \in \mathbf{Cities}$ and $i \notin \mathbf{Hubs}$} {
+				$bestowner \leftarrow \mathop{\arg\max}_{k}{city\text{-}hub\text{-}score(i,k,\mathbf{Hubs})}$ forall $k \in \mathbf{Hubs}$\; 
+				$owner[i] \leftarrow bestowner$\;
+			}
+			$worsthub \leftarrow \mathop{\arg\min}_{k}{hub\text{-}score(k,\mathbf{Hubs}, CitiesOwnedBy(k)))}$ forall $k\in \mathbf{Hubs}$\;
+			$\mathbf{Hubs} \leftarrow \mathbf{Hubs} \setminus \{worsthub\}$\;
+			$\mathbf{FreeCities} \leftarrow CitiesOwnedBy(worsthub) \cup \{worsthub\}$\;
+			$betterhub \leftarrow \mathop{\arg\max}_{k}{hub\text{-}score(k,\mathbf{Hubs}, \mathbf{FreeCities}))}$ forall $k\in \mathbf{FreeCities}$\;
+			\For{$i \in \mathbf{Cities}$}{
+				$Owner[i] \leftarrow betterhub$\;
+			}
+			\If{$betterhub = worsthub$ or $\tau_{ld} \leq d_{km} \leq \tau_{hd}, \forall k,m \in \mathbf{Hubs} $}{
+				\Return\;
+			}
+		}		
+	\end{algorithm}
+\end{minipage}
+
+\subsection{section}
+
+
 \section{Evalution}
 We evalute our \ref{lp2} model on the given dataset.
 To assure the transportation cost and the update cost are in the same order of magnitude, we set $s=0.00001$. Here $N=81$ then $P = 2*N*N = 13122$. 
 
-2-stage muli-obejctive optimizition costs two much time, thus we simplily add the two object functions to get the final object function :
+2-stage muli-obejctive optimizition costs two much time, thus we simply add the two object functions to get the final object function :
 
 \begin{align}
 	 \quad & \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} C_{ijkm} + \sum_{k}U_k Y_{k} 
