@@ -30,8 +30,8 @@
 
 
 
-\title{The Title of Your Project}
-\subtitle{The Sub-Title of Your Project \vspace{-3mm}}
+\title{Logistic Network Design}
+\subtitle{An ILP Approach \vspace{-3mm}}
 
 \author{Author1 (ID, email), Author2 (ID, email), Author3 (ID, email)}
 \institute{Department of Computer Science, \\ Shanghai Jiao Tong University, Shanghai, China}
@@ -57,6 +57,8 @@
 	$\mathbf{L} = \{1,2,3...\}$: The cities set.
 	
 	$N = |\mathbf{L}|$: The total number of cities.
+	
+	$P = 2 * N * N$: The total number of all O-D pairs.
 	
 	$\mathbf{H} = \{1,2,3...\}$: The hubs set. 
 	
@@ -109,21 +111,40 @@
 	\right.  
 	\end{equation}
 	
-\subsection{Other variables}
+\subsection{Object functions}
+	The main aim of our model is to minimize the update cost, meanwhile the total transportation cost and delivery time are also in consideration but not important.
 	
-	Then the \textbf{transportation distance} from $i$ to $j$ through network is:
+	Obviously, the \textbf{update cost} of all the hubs is:
 	\begin{equation}
-	\sum_{k}\sum_{m}{(D_{ik} + D_{km}+ D_{mj}) A_{ik} A_{jm}}
+	    \sum_{k}U_k Y_{k}
 	\end{equation}
 	
-	The \textbf{transportation time} from $i$ to $j$ through network is:
+	Then the \textbf{transportation cost} from $i$ to $j$ through network is:
+	\begin{equation}
+		\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm}
+	\end{equation}
+	
+	The \textbf{delivery time} from origin $i$ to destination $j$ through network is:
 	\begin{equation}
 	\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}
 	\end{equation}
 	
-	The \textbf{flow} transferred from city $i$ to city $j$ through network is:
+	Then the total cost to build the entire network will be:
 	\begin{equation}
-	\sum_{k}\sum_{m}{F_{ij} X_{ijkm} A_{ik} A_{jm}}
+		\sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k}
+	\end{equation}
+	
+	As the update cost is the main factor we consider, using the average transportation cost insead of total cost is more suitable. Then we get our first object function:
+	
+	\begin{equation}
+		\frac{1}{P}\sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} \tag{\textbf{Object 1}}
+	\end{equation}
+	
+	$P$ is the total number of all O-D pairs here.
+	
+	And the second object function is the average delivery time:
+		\begin{equation}
+		\frac{1}{P} \sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}} \tag{\textbf{Object 2}}
 	\end{equation}
 	
 \section{Uncapacitated single allocation formulation}
@@ -136,8 +157,8 @@
 	
 	\begin{alignat}{2}
 	\min\quad
-	& \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} \nonumber & &\\
-	\quad& \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP1}\\
+	& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} \nonumber & &\\
+	\quad& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP1}\\
 	\mbox{s.t.}  \quad
 	&Y_{k} \in \{0,1\} &\quad& \forall k \label{st1}\\ 
 	&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st2}\\ 
@@ -165,8 +186,8 @@
 The decision variable $X_{ijkm}$ makes the model easier to extend to capacitated or multiple allocation problems, but in fact it is redundant here, as it would be either 0 or 1 and could be replaced with $X_{ijkm} = A_{ik} * A_{jm}$. Thus we could simplify the model as:
 	\begin{alignat}{2}
 		\min\quad
-		& \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
-		\quad& \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP2} \label{lp2}\\
+		& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
+		\quad& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP2} \label{lp2}\\
 		\mbox{s.t.}  \quad
 		&Y_{k} \in \{0,1\} &\quad& \forall k \label{st1.1}\\ 
 		&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st1.2}\\ 
@@ -190,8 +211,8 @@ The decision variable $X_{ijkm}$ makes the model easier to extend to capacitated
 	
 	\begin{alignat}{2}
 	\min\quad
-	& \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
-	\quad& \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP3} \label{lp3}\\
+	& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
+	\quad& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP3} \label{lp3}\\
 	\mbox{s.t.}  \quad
 	&Y_{k} \in \{0,1\} &\quad& \forall k \label{st2.1}\\ 
 	&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st2.2}\\ 
@@ -213,8 +234,8 @@ The decision variable $X_{ijkm}$ makes the model easier to extend to capacitated
 	We simply add a capacity constraint for the sum of all valid paths routed through hub $m$. 
 	\begin{alignat}{2}
 		\min\quad
-		& \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
-		\quad& \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP4}\label{lp4}\\
+		& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
+		\quad& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP4}\label{lp4}\\
 		\mbox{s.t.}  \quad
 		&Y_{k} \in \{0,1\} &\quad& \forall k \label{st3.1}\\ 
 		&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st3.2}\\ 
@@ -230,8 +251,8 @@ The decision variable $X_{ijkm}$ makes the model easier to extend to capacitated
 Similarly to the capacitated single allocation formulation, we add a capacity constraint for the sum of all valid paths routed through hub $m$.
 	\begin{alignat}{2}
 		\min\quad
-		& \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
-		\quad& \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP5}\label{lp5}\\
+		& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  X_{ijkm} C_{ijkm} + \sum_{k}U_k Y_{k} & & \nonumber\\
+		\quad& \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}  & & \tag{LP5}\label{lp5}\\
 		\mbox{s.t.}  \quad
 		&Y_{k} \in \{0,1\} &\quad& \forall k \label{st4.1}\\ 
 		&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st4.2}\\ 
@@ -243,80 +264,34 @@ Similarly to the capacitated single allocation formulation, we add a capacity co
 	\end{alignat}
 	
 \section{Evalution}
-In this section we evalute our \ref{lp2} model on the given dataset.
+We evalute our \ref{lp2} model on the given dataset.
+To assure the transportation cost and the update cost are in the same order of magnitude, we set $s=0.00001$. Here $N=81$ then $P = 2*N*N = 13122$. 
 
-\section{First Section}
-	\subsection{A Subsection Sample}
-	Please note that the first paragraph of a section or subsection is
-	not indented. The first paragraph that follows a table, figure,
-	equation etc. does not need an indent, either.
-	
-	Subsequent paragraphs, however, are indented.
-	
-	\subsubsection{Sample Heading (Third Level)} Only two levels of
-	headings should be numbered. Lower level headings remain unnumbered;
-	they are formatted as run-in headings.
-	
-	\paragraph{Sample Heading (Fourth Level)}
-	The contribution should contain no more than four levels of
-	headings. Table~\ref{tab1} gives a summary of all heading levels.
-	
-	\begin{table}
-		\caption{Table captions should be placed above the
-			tables.}\label{tab1}
-		\begin{tabular}{|l|l|l|}
-			\hline
-			Heading level &  Example & Font size and style\\
-			\hline
-			Title (centered) &  {\Large\bfseries Lecture Notes} & 14 point, bold\\
-			1st-level heading &  {\large\bfseries 1 Introduction} & 12 point, bold\\
-			2nd-level heading & {\bfseries 2.1 Printing Area} & 10 point, bold\\
-			3rd-level heading & {\bfseries Run-in Heading in Bold.} Text follows & 10 point, bold\\
-			4th-level heading & {\itshape Lowest Level Heading.} Text follows & 10 point, italic\\
-			\hline
-		\end{tabular}
-	\end{table}
-	
-	\noindent Displayed equations are centered and set on a separate
-	line.
-	\begin{equation}
-	x + y = z
-	\end{equation}
-	Please try to avoid rasterized images for line-art diagrams and
-	schemas. Whenever possible, use vector graphics instead (see
-	Fig.~\ref{fig1}).
-	
-	\begin{figure}
-		\includegraphics[width=0.6\textwidth]{fig1.eps}
-		\centering
-		\caption{A figure caption is always placed below the illustration.
-			Please note that short captions are centered, while long ones are
-			justified by the macro package automatically.} \label{fig1}
-	\end{figure}
-	
-	\begin{theorem}
-		This is a sample theorem. The run-in heading is set in bold, while
-		the following text appears in italics. Definitions, lemmas,
-		propositions, and corollaries are styled the same way.
-	\end{theorem}
-	%
-	% the environments 'definition', 'lemma', 'proposition', 'corollary',
-	% 'remark', and 'example' are defined in the LLNCS documentclass as well.
-	%
-	\begin{proof}
-		Proofs, examples, and remarks have the initial word in italics,
-		while the following text appears in normal font.
-	\end{proof}
-	For citations of references, we prefer the use of square brackets
-	and consecutive numbers. Citations using labels or the author/year
-	convention are also acceptable. The following bibliography provides
-	a sample reference list with entries for journal
-	articles~\cite{ref_article1}, an LNCS chapter~\cite{ref_lncs1}, a
-	book~\cite{ref_book1}, proceedings without editors~\cite{ref_proc1},
-	and a homepage~\cite{ref_url1}. Multiple citations are grouped
-	\cite{ref_article1,ref_lncs1,ref_book1},
-	\cite{ref_article1,ref_book1,ref_proc1,ref_url1}.
-	
+2-stage muli-obejctive optimizition costs two much time, thus we simplily add the two object functions to get the final object function :
+
+\begin{align}
+	 \quad & \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} C_{ijkm} + \sum_{k}U_k Y_{k} 
+	 + \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}} \nonumber \\
+	 = \quad &   \sum_{k}U_k Y_{k} \nonumber \\
+	 & + \frac{s}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} (D_{ik}+D_{km}+D_{mj}) \nonumber\\
+     & + \frac{1}{P} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}	 \nonumber\\
+     = \quad &\sum_{k}U_k Y_{k} \nonumber\\
+     & + \frac{0.00001}{13122} \sum_{i}\sum_{j}\sum_{k}\sum_{m}F_{ij}  A_{ik} A_{jm} (D_{ik}+D_{km}+D_{mj})   \nonumber\\
+     & + \frac{1}{13122} \sum_{i}\sum_{j}\sum_{k}\sum_{m}{(T_{ik}+ T_{km}+ T_{mj} ) A_{ik} A_{jm}}
+\end{align}
+
+The constraints are same with \ref{lp2}:
+\begin{alignat}{2}
+	\mbox{s.t.}  \quad
+	&Y_{k} \in \{0,1\} &\quad& \forall k \label{st1.1}\\ 
+	&A_{ik} \in \{0,1\} &\quad& \forall i,k \label{st1.2}\\ 
+	&A_{ik} \leq Y_{k} &\quad& \forall i,k \label{st1.3}\\
+	&\sum_{k}{A_{ik}} = 1 &\quad& \forall i \label{st1.4}
+\end{alignat}
+
+We build this model with OPL language and solve the problem in IBM CPLEX, 
+
+
 	
 	\section*{Acknowledgements}
 	
