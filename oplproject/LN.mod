@@ -19,7 +19,7 @@ float U[r]=...;
 dvar boolean A[r][r];
 dvar boolean Y[r];
 
-dexpr float updateCost =  sum(k in r)  U[k]*Y[k];
+dexpr float updateCost = sum(k in r) U[k]*Y[k];
 
 dexpr float opCost = 
   sum(i,j,k,m in r) 
@@ -33,10 +33,10 @@ minimize updateCost+opCost+transTime;
  
 subject to{ 
   forall(i,k in r) 
-  	A[i][k] <= Y[k];
+    A[i][k] <= Y[k];
   forall(i in r)
     sum(k in r)
-  	  A[i][k] == 1;
+      A[i][k] == 1;
 } 
  
  
