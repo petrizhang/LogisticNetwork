@@ -312,9 +312,9 @@ Contructed on $city\text{-}hub\text{-}score$ and $hub\text{-}score$, the basic i
 \begin{itemize}
 	\item [1.] Randomly choose $n$ hubs at the begining. 
 	\item [2.] Calculate the $city\text{-}hub\text{-}score$ for all cities and then allocate these cities to hubs based on this score.
-	\item [3.]  Calculate the $hub\text{-}score$ for all hubs and then and remove the lowest scored one from the hubs set.
-	\item [4.] Calculate the $hub\text{-}score$ for all rest free cities then select a new hub. If the hub equals to the previous one, then algorithm terminates.
-	\item[5.] Repeat from step 2 until the distance between every 2 hubs satisfies the threshold constraint $\tau_{ld} \leq d_{km} \leq \tau_{hd}$.
+	\item [3.]  Travel the hubs set, fro every hub $i$ and the cities it dominate, remove $i$ from hubs set and mark these cities as free cities, calculate the  $hub\text{-}score$ for all no-hub cities(including the cities owned by other hubs) then select a new hub for the free cities. Put the new hub to hubs set.
+	\item [4.] If the new hubs set equals to the previous one, then algorithm terminates.
+	\item[5.] Repeat from step 2 until the distance between every 2 hubs satisfies the threshold constraint $\tau_{ld} \leq d_{km} \leq \tau_{hd}$ or the algorithm reaches step 4.
 \end{itemize}
 \begin{minipage}[t]{\textwidth}
 	\begin{algorithm}[H]
@@ -327,25 +327,30 @@ Contructed on $city\text{-}hub\text{-}score$ and $hub\text{-}score$, the basic i
 		\caption{n-hub($n$, $\tau_{ld}$, $\tau_{hd}$, $F[1..N][1..N]$, $D[1..N][1..N]$, $T[1..N][1..N]$)}\label{Alg.n-hub}
 		\While{true}{
 			\For{$i \in \mathbf{Cities}$ and $i \notin \mathbf{Hubs}$} {
-				$bestowner \leftarrow \mathop{\arg\max}_{k}{city\text{-}hub\text{-}score(i,k,\mathbf{Hubs})}$ forall $k \in \mathbf{Hubs}$\; 
+				$bestowner \leftarrow \mathop{\arg\min}_{k}{city\text{-}hub\text{-}score(i,k,\mathbf{Hubs})}$ forall $k \in \mathbf{Hubs}$\; 
 				$owner[i] \leftarrow bestowner$\;
 			}
-			$worsthub \leftarrow \mathop{\arg\min}_{k}{hub\text{-}score(k,\mathbf{Hubs}, CitiesOwnedBy(k)))}$ forall $k\in \mathbf{Hubs}$\;
-			$\mathbf{Hubs} \leftarrow \mathbf{Hubs} \setminus \{worsthub\}$\;
-			$\mathbf{FreeCities} \leftarrow CitiesOwnedBy(worsthub) \cup \{worsthub\}$\;
-			$betterhub \leftarrow \mathop{\arg\max}_{k}{hub\text{-}score(k,\mathbf{Hubs}, \mathbf{FreeCities}))}$ forall $k\in \mathbf{FreeCities}$\;
-			\For{$i \in \mathbf{Cities}$}{
-				$Owner[i] \leftarrow betterhub$\;
-			}
-			\If{$betterhub = worsthub$ or $\tau_{ld} \leq d_{km} \leq \tau_{hd}, \forall k,m \in \mathbf{Hubs} $}{
-				\Return\;
-			}
+			$\mathbf{OldHubs} \leftarrow \mathbf{Hubs}$\;
+			\For{$h \in \mathbf{Hubs}$} {
+				$\mathbf{Hubs} \leftarrow \mathbf{Hubs} \setminus \{h\}$\;
+				$\mathbf{FreeCities} \leftarrow CitiesOwnedBy(h) \cup \{h\}$\;
+				$betterhub \leftarrow \mathop{\arg\max}_{k}{hub\text{-}score(k,\mathbf{Hubs}, \mathbf{FreeCities}))}$ forall $k\in \mathbf{Cities}$\;
+				$\mathbf{Hubs} \leftarrow \mathbf{Hubs} \cup \{betterhub\}$\;
+				$Owner[betterhub] \leftarrow betterhub$\;
+				\For{$i \in \mathbf{Cities}$}{
+					$Owner[i] \leftarrow betterhub$\;
+				}
+
+		  }
+	  		
+		  \If{$\mathbf{Hubs} \neq \mathbf{OldHubs}$ or $\tau_{ld} \leq d_{km} \leq \tau_{hd}, \forall k,m \in \mathbf{Hubs} $} {
+		  	\textbf{break}\;
+		  }
 		}		
 	\end{algorithm}
 \end{minipage}
 
-\subsection{section}
-
+For $N$ cities, to find a k-hub allocation, the complexity of our algorithm is $O(ck^2N^2)$, here $c$ is the total rounds our algorithm execute. Cenerally $c$ would be a very small constant. The parameter $\tau_{ld}$ and $\tau_{hd}$ will decrease the execute time our this algorithm. We could also set them to $-\infty$ and $\infty$ to for better accuracy. In our experiments we just ignore these 2 parameters because the performance of the program is in an acceptable range.
 
 \section{Evalution}
 We evalute our \ref{lp2} model on the given dataset.
