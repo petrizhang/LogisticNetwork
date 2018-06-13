@@ -1,13 +1,15 @@
-from utils import *
+import utils
+import pandas as pd
+import numpy as np
 
 
 def n_hub_once(n: int):
     # randomly choose initial hubs
-    hubs = random_init_hubs(n)
+    hubs = utils.random_init_hubs(n)
     print(f'initial hubs:{hubs}')
 
-    all_cities = list(range(0, N))
-    owner = -1 * np.ones([N, ])
+    all_cities = list(range(0, utils.score.N))
+    owner = -1 * np.ones([utils.score.N, ])
 
     round = 1
     while True:
@@ -18,14 +20,15 @@ def n_hub_once(n: int):
             break
         cities_to_assign = all_cities
         # calculate owner score for all cities and hubs
-        cities_owner_score = np.asarray([city_hub_score(cities_to_assign, h, hubs) for h in hubs]).T
+        cities_owner_score = np.asarray(
+            [utils.score.city_hub_score(cities_to_assign, h, hubs) for h in hubs]).T
         hub_index = cities_owner_score.argmin(axis=1)
 
         # update owner for all cities
         owner[cities_to_assign] = hubs[hub_index]
         owner[hubs] = hubs
 
-        print_hubs(hubs, owner)
+        utils.print_hubs(hubs, owner)
 
         # calclulate hub score to update hubs
         # hubs_score = [hub_score(h, hubs, owned_by(h)) for h in hubs]
@@ -39,10 +42,11 @@ def n_hub_once(n: int):
         for h in hubs:
             print('-' * 40)
             print(f'Reselect hub for hub-{h} region:')
-            cities_to_assign = owned_by(h, owner)
+            cities_to_assign = utils.owned_by(h, owner)
 
             no_hubs_and_h = list(set(all_cities) - (set(new_hubs) - {h}))
-            cities_score = [hub_score(c, replace(new_hubs, h, c), cities_to_assign) for c in no_hubs_and_h]
+            cities_score = [utils.score.hub_score(c, utils.replace(new_hubs, h, c), cities_to_assign) for c in
+                            no_hubs_and_h]
             print('Cities score:')
             print("\tcity\tscore")
             for city, score in zip(no_hubs_and_h, cities_score):
@@ -57,7 +61,7 @@ def n_hub_once(n: int):
                 print(f'Replace the old hub: {h}')
                 owner[owner == h] = best_city
                 owner[best_city] = best_city
-                new_hubs = replace(new_hubs, h, best_city)
+                new_hubs = utils.replace(new_hubs, h, best_city)
         if np.all(new_hubs == hubs):
             print(f"{'=' * 20} end of round {round}{'=' * 20}")
             break
@@ -72,16 +76,17 @@ def n_hub_once(n: int):
 
 
 def n_hub(n: int, iter=20):
-    all_cities = range(0, N)
+    all_cities = range(0, utils.score.N)
     result = []
     for i in range(iter):
         hubs, owner = n_hub_once(n)
-        result.append(((hubs, owner), network_score(all_cities, owner)))
-    min_result = min(result, key=lambda x: x[1][2])
+        result.append(((hubs, owner), utils.score.network_score(hubs, all_cities, owner)))
+    min_result = min(result, key=lambda x: x[1]['overall score'])
 
     return min_result
 
 
-print_result(n_hub(5, 100))
-
-import networkx
+result = n_hub(5, 100)
+(hubs, owner), _ = result
+utils.print_result(result)
+print(utils.score.delivery_time(hubs, range(81), owner))

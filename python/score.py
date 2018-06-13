@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import List
 import numpy as np
 from data import *
@@ -8,7 +9,7 @@ F = np.asarray(RF)
 T = np.asarray(RT)
 U = np.asarray(RU)
 N = 81
-s = 0.001
+s = 0.01
 a = 0.5
 w1 = 0.5
 w2 = 0.5
@@ -73,14 +74,58 @@ def hub_score(hub_to_messure: List[int], all_hubs: List[int], cities: List[int])
     return city_hub_score(cities, hub_to_messure, all_hubs).sum()
 
 
-def network_score(all_cities: np.ndarray, owner: np.ndarray):
+def network_score(hubs: np.ndarray, all_cities: np.ndarray, owner: np.ndarray):
+    hubs = hubs.astype(int)
     odpairs = list(itertools.product(all_cities, all_cities))
-    total_cost = 0.0
+    n_pairs = len(odpairs)
+    op_cost = 0.0
+    update_cost = U[hubs].sum()
     total_time = 0.0
+
+    distance_list = []
+    for h1, h2 in itertools.product(hubs, hubs):
+        if h1 == h2:
+            continue
+        else:
+            distance_list.append(D[h1, h2])
+    aver_distance_hubs = np.average(np.asarray(distance_list))
+
     for o, d in odpairs:
         k = int(owner[o])
         m = int(owner[d])
-        total_cost += D[o, k] * F[o, k] + a * D[k, m] + D[d, m] * F[d, m]
+        op_cost += D[o, k] * F[o, k] + a * D[k, m] + D[d, m] * F[d, m]
         total_time += T[o, k] + T[k, m] + T[d, m]
-    total_cost *= s
-    return total_cost, total_time, w1 * total_cost + w2 * total_time
+    op_cost = s * op_cost / n_pairs
+    total_cost = op_cost + update_cost
+    total_time /= n_pairs
+    return OrderedDict({
+        'update cost': update_cost,
+        'average transportation cost': op_cost,
+        'total cost': total_cost,
+        'average delevery time': total_time,
+        'average distance between hubs': aver_distance_hubs,
+        'overall score': w1 * total_cost + w2 * total_time
+    })
+
+
+def delivery_time(hubs: np.ndarray, all_cities: np.ndarray, owner: np.ndarray):
+    odpairs = list(itertools.product(all_cities, all_cities))
+
+    no_hub_times = []
+    hub_times = []
+    for o, d in odpairs:
+        if o == d:
+            continue
+        if o in hubs and d in hubs:
+            hub_times.append((o + 1, d + 1, T[o, d]))
+        k = int(owner[o])
+        m = int(owner[d])
+        no_hub_times.append((o + 1, d + 1, T[o, k] + T[k, m] + T[d, m]))
+
+    with open('no-hub-time.csv', 'w') as f:
+        for o, d, t in no_hub_times:
+            f.write(f'{o}-{d},{t}\n')
+    with open('hub-time.csv', 'w') as f:
+        for o, d, t in hub_times:
+            f.write(f'{o}-{d},{t}\n')
+    return no_hub_times, hub_times
