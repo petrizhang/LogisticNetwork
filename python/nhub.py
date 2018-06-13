@@ -3,6 +3,19 @@ from score import *
 import numpy as np
 
 
+def random_init_hubs(n: int):
+    hubs = []
+    while True:
+        randint = np.random.randint(0, N)
+        if randint in hubs:
+            continue
+        else:
+            hubs.append(randint)
+        if len(hubs) == n:
+            break
+    return np.asarray(hubs)
+
+
 def replace(a: np.ndarray, olde, newe):
     newarray = a.copy()
     newarray[newarray == olde] = newe
@@ -29,20 +42,6 @@ def print_result(result):
     print(f"{'*'*20} End {'*'*20}")
 
 
-source_cities = range(1, 30)
-passed_hub = 2
-hubs = [3, 4, 5, 6]
-
-# hc(1,2,[3,4]) = array([76.547688, 70.748717])
-# print(hc(source_cities, passed_hub, hubs))
-# print(ht(source_cities, passed_hub, hubs))
-# print(hscore(source_cities, passed_hub, hubs))
-# print(city_hub_score(source_cities, passed_hub, hubs))
-# print(hub_score([passed_hub, passed_hub], source_cities, hubs))
-
-n = 5
-
-
 def choose_initial_hub(n: int):
     pair_distance = {}
     for i in range(0, N):
@@ -67,16 +66,7 @@ def owned_by(h: int, owner: np.ndarray):
 
 def n_hub_once(n: int):
     # randomly choose initial hubs
-    hubs = []
-    while True:
-        randint = np.random.randint(0, N)
-        if randint in hubs:
-            continue
-        hubs.append(randint)
-        if len(hubs) == n:
-            break
-    hubs = np.asarray(hubs)
-    # hubs = np.asarray(choose_initial_hub(n))
+    hubs = random_init_hubs(n)
     print(f'initial hubs:{hubs}')
 
     all_cities = list(range(0, N))
@@ -86,6 +76,9 @@ def n_hub_once(n: int):
     while True:
         print(f"{'=' * 20} start of round {round}{'=' * 20}")
         print(hubs)
+        if len(set(hubs)) != n:
+            print("!!!Damage Error!!!")
+            break
         cities_to_assign = all_cities
         # calculate owner score for all cities and hubs
         cities_owner_score = np.asarray([city_hub_score(cities_to_assign, h, hubs) for h in hubs]).T
@@ -111,7 +104,7 @@ def n_hub_once(n: int):
             print(f'Reselect hub for hub-{h} region:')
             cities_to_assign = owned_by(h, owner)
 
-            no_hubs_and_h = list(set(all_cities) - (set(hubs) - {h}))
+            no_hubs_and_h = list(set(all_cities) - (set(new_hubs) - {h}))
             cities_score = [hub_score(c, replace(new_hubs, h, c), cities_to_assign) for c in no_hubs_and_h]
             print('Cities score:')
             print("\tcity\tscore")
@@ -152,6 +145,4 @@ def n_hub(n: int, iter=20):
     return min_result
 
 
-results = [n_hub(i) for i in range(3,10)]
-for r in results:
-    print_result(r)
+print_result(n_hub(5, 100))

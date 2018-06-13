@@ -1,3 +1,6 @@
+__pycache__/
+.idea/
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
