@@ -1,3 +1,4 @@
+import argparse
 import utils
 import pandas as pd
 import numpy as np
@@ -85,8 +86,21 @@ def n_hub(n: int, iter=20):
 
     return min_result
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-iter','--iteration',type=int, help="iteration rounds")
+    parser.add_argument('-n','--nhub',type=int, help='the number of hubs')
+    args = parser.parse_args()
+    k = 5
+    iteration = 10 
+    if args.iteration:
+        iteration = int(args.iteration)
+    if args.nhub:
+        k = int(args.nhub)
+    result = n_hub(k, iteration)
+    (hubs, owner), _ = result
+    utils.print_result(result)
+    # print(utils.score.delivery_time(hubs, range(81), owner))
 
-result = n_hub(5, 100)
-(hubs, owner), _ = result
-utils.print_result(result)
-print(utils.score.delivery_time(hubs, range(81), owner))
+if __name__ == '__main__':
+    main()
